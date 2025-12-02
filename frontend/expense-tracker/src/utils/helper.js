@@ -47,10 +47,15 @@ export const prepareExpenseBarChartData = (data = []) => {
 
       return hasValidCategory && hasValidAmount;
     })
-    .map((item) => ({
-      category: item.category,
-      amount: Number(item.amount),
-    }));
+.map((item) => {
+  const dateObj = new Date(item.date);
+  const month = dateObj.toLocaleString("default", { month: "short" }); // e.g. "Sep"
+  return {
+    month,
+    amount: Number(item.amount),
+  };
+});
+
 
   console.log("prepareExpenseBarChartData - Final chart data:", chartData);
   return chartData;

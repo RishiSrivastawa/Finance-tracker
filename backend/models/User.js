@@ -7,6 +7,12 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     profileImageUrl: { type: String, default: null },
+    //these things are added new
+    verifyOtp: { type: String, default:'' },
+    verifyOtpExpireAt: { type: Number, default: 0 },
+    isVerified: { type: Boolean, default: false },
+    resetOtp: { type: String, default: '' },
+    resetOtpExpireAt: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
@@ -20,4 +26,6 @@ UserSchema.pre('save', async function (next) {
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
-module.exports = mongoose.model('User', UserSchema);
+//done changes here too
+const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
+module.exports = UserModel;

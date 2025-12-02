@@ -1,8 +1,9 @@
 const User = require("../models/User");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 // Generate JWT token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 // Register User
 exports.registerUser = async (req, res) => {
@@ -12,11 +13,13 @@ exports.registerUser = async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
-    // Check if email already exists
+    // Check if email already exists  
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already in use" });
     }
+    const hashedPassword = await bcrypt.hash(password, 10); //chnages made here
+
     // Create the user
     const user = await User.create({
       fullName,
