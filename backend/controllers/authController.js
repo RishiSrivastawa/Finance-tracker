@@ -2,7 +2,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const sendEmail = require("../utils/sendEmail"); // 👈 make sure this line is here
+const sendEmail = require("../utils/sendEmail");
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -25,7 +25,7 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    // const hashedPassword = await bcrypt.hash(password, 10); // ❌ not needed, model hashes it
+    // const hashedPassword = await bcrypt.hash(password, 10);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
 
@@ -40,7 +40,7 @@ exports.registerUser = async (req, res) => {
       verifyOtpExpireAt: Date.now() + 10 * 60 * 1000, // 10 mins from now
     });
 
-    // 👇👇 ADD THIS PART: call sendEmail + optional devOtp
+    // error check
     console.log("About to send OTP email to:", user.email, "OTP:", otp);
     await sendEmail({
       to: user.email,
@@ -54,10 +54,6 @@ exports.registerUser = async (req, res) => {
       message: "User registered. OTP sent to email for verification.",
     };
 
-    // DEV ONLY: return OTP in response so you can test
-    if (process.env.NODE_ENV !== "production") {
-      responseData.devOtp = otp;
-    }
 
     return res.status(201).json(responseData);
   } catch (err) {
