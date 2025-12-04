@@ -17,7 +17,7 @@ app.use(
         allowedHeaders: ["Content-Type", "Authorization"],
     })
 ); 
-//not same as video
+
 app.use(express.json());
 connectDB();
 app.use("/api/v1/auth", authRoutes);

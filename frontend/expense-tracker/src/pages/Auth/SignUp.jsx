@@ -14,10 +14,10 @@ const SignUp = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");              // ⬅️ new
+  const [otp, setOtp] = useState("");
   const [error, setError] = useState(null);
-  const [info, setInfo] = useState("");            // ⬅️ for success/info messages
-  const [step, setStep] = useState("FORM");        // "FORM" | "VERIFY"
+  const [info, setInfo] = useState("");            
+  const [step, setStep] = useState("FORM");        
   const [loading, setLoading] = useState(false);
 
   const { updateUser } = useContext(UserContext);
@@ -62,13 +62,12 @@ const SignUp = () => {
         profileImageUrl,
       });
 
-      // backend now sends: { success, message, devOtp? }
+
       setStep("VERIFY");
       setInfo(
         "We have sent an OTP to your email. Please enter it below to verify your account."
       );
 
-      // for dev you can log devOtp if you included it in backend
       if (response.data.devOtp) {
         console.log("Dev OTP (for testing):", response.data.devOtp);
       }
@@ -83,7 +82,7 @@ const SignUp = () => {
     }
   };
 
-  // STEP 2: Handle OTP verification on same page
+  
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
 
@@ -112,7 +111,6 @@ const SignUp = () => {
         updateUser(user);
         navigate("/dashboard");
       } else {
-        // fallback: go to login if no token returned
         navigate("/login");
       }
     } catch (error) {
