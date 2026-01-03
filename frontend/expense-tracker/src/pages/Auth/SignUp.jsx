@@ -151,7 +151,7 @@ const SignUp = () => {
               value={email}
               onChange={({ target }) => setEmail(target.value)}
               label="Email Address"
-              placeholder="john@example.com"
+              placeholder="rishi@example.com"
               type="text"
               disabled={step === "VERIFY"}
             />
