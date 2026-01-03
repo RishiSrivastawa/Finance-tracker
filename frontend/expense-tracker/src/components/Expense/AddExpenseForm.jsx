@@ -96,34 +96,63 @@ const AddExpenseForm = ({ onAddExpense }) => {
         type="date"
       />
 
-  
-      <div className="mt-4">
-        <label className="block text-xs font-semibold text-slate-700 mb-1">
-          Upload Receipt (optional)
-        </label>
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          onChange={(e) => {
-            setReceiptFile(e.target.files[0] || null);
-            setScanError("");
-          }}
-          className="block w-full text-xs"
-        />
+  <div className="mt-4">
+  <label className="block text-xs font-semibold text-slate-700 mb-1">
+    Upload Receipt (optional)
+  </label>
 
-        <button
-          type="button"
-          className="mt-2 text-xs underline text-primary"
-          onClick={handleScanReceipt}
-          disabled={scanLoading || !receiptFile}
-        >
-          {scanLoading ? "Scanning..." : "Scan Receipt to Auto-fill"}
-        </button>
+  {/* Upload Button */}
+  <label
+    htmlFor="receipt-upload"
+    className="flex items-center justify-center gap-2 w-full cursor-pointer rounded-md border border-dashed border-slate-300 bg-slate-50 py-3 text-xs text-slate-600 hover:bg-slate-100"
+  >
+    📎 Click to upload receipt (image / PDF)
+  </label>
 
-        {scanError && (
-          <p className="text-red-500 text-xs mt-1">{scanError}</p>
-        )}
-      </div>
+  <input
+    id="receipt-upload"
+    type="file"
+    accept="image/*,application/pdf"
+    className="hidden"
+    onChange={(e) => {
+      setReceiptFile(e.target.files[0] || null);
+      setScanError("");
+    }}
+  />
+
+  {/* Selected file feedback */}
+  {receiptFile && (
+    <p className="mt-1 text-xs text-slate-500">
+      Selected file: <span className="font-medium">{receiptFile.name}</span>
+    </p>
+  )}
+
+  {/* Scan Button */}
+  <button
+    type="button"
+    onClick={handleScanReceipt}
+    disabled={!receiptFile || scanLoading}
+    className={`mt-2 text-xs underline ${
+      receiptFile
+        ? "text-primary cursor-pointer"
+        : "text-slate-400 cursor-not-allowed"
+    }`}
+  >
+    {scanLoading ? "Scanning receipt..." : "Scan receipt to auto-fill"}
+  </button>
+
+  {/* Helper text */}
+  {!receiptFile && (
+    <p className="text-xs text-slate-400 mt-1">
+      Upload a receipt to enable scanning
+    </p>
+  )}
+
+  {scanError && (
+    <p className="text-red-500 text-xs mt-1">{scanError}</p>
+  )}
+</div>
+
 
       <div className="flex justify-end mt-6">
         <button

@@ -13,56 +13,60 @@ const generateToken = (id) => {
 exports.registerUser = async (req, res) => {
   const { fullName, email, password, profileImageUrl } = req.body;
 
-  // Validation: Check for missing fields
   if (!fullName || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
   }
 
   try {
-    // Check if email already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+
+    // ❌ CASE 1: VERIFIED USER → BLOCK
+    if (existingUser && existingUser.isVerified) {
       return res.status(400).json({ message: "Email already in use" });
     }
 
-    // const hashedPassword = await bcrypt.hash(password, 10);
+    // 🗑️ CASE 2: UNVERIFIED USER → DELETE OLD RECORD
+    if (existingUser && !existingUser.isVerified) {
+      await User.deleteOne({ email });
+    }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit
+    // 🔐 Generate NEW OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Create the user
-    const user = await User.create({
+    // 📧 Send OTP FIRST
+    const emailSent = await sendEmail({
+      to: email,
+      subject: "Verify your email - Finance Tracker",
+      text: `Hi ${fullName},\n\nYour OTP is: ${otp}\nIt expires in 10 minutes.`,
+    });
+
+    if (!emailSent) {
+      return res
+        .status(500)
+        .json({ message: "Failed to send OTP. Please try again." });
+    }
+
+    // ✅ Create fresh user
+    await User.create({
       fullName,
       email,
       password,
       profileImageUrl,
       isVerified: false,
       verifyOtp: otp,
-      verifyOtpExpireAt: Date.now() + 10 * 60 * 1000, // 10 mins from now
+      verifyOtpExpireAt: Date.now() + 10 * 60 * 1000,
     });
 
-    // error check
-    console.log("About to send OTP email to:", user.email, "OTP:", otp);
-    await sendEmail({
-      to: user.email,
-      subject: "Verify your email - Finance Tracker",
-      text: `Hi ${user.fullName},\n\nYour OTP for email verification is: ${otp}\nIt will expire in 10 minutes.\n\nIf you didn't sign up, you can ignore this email.`,
-    });
-    console.log("sendEmail() finished");
-
-    const responseData = {
+    return res.status(201).json({
       success: true,
-      message: "User registered. OTP sent to email for verification.",
-    };
-
-
-    return res.status(201).json(responseData);
+      message: "OTP sent to your email for verification.",
+    });
   } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ message: "Error registering user", error: err.message });
+    console.error("Register error:", err);
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 
 // Login User
 exports.loginUser = async (req, res) => {
