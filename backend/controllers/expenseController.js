@@ -1,5 +1,118 @@
 const xlsx = require('xlsx');
 const Expense = require("../models/Expense");
+const fs = require("fs");
+const path = require("path");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+// Helper: init Gemini client only if API key exists
+let genAI = null;
+if (process.env.GEMINI_API_KEY) {
+  genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+}
+
+// Optional: parse receipt using Gemini + OCR
+exports.parseReceipt = async (req, res) => {
+  try {
+    // 1. Check file
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No receipt file uploaded." });
+    }
+
+    // 2. Check if GEMINI_API_KEY configured
+    if (!genAI) {
+      return res.status(501).json({
+        success: false,
+        message:
+          "Receipt scanning is not configured. (Missing GEMINI_API_KEY on server.)",
+      });
+    }
+
+    const filePath = req.file.path; // where multer stored it
+    const mimeType = req.file.mimetype || "image/jpeg";
+    const imageBuffer = fs.readFileSync(filePath);
+    const base64 = imageBuffer.toString("base64");
+
+const model = genAI.getGenerativeModel({ model: "gemini-flash-lite-latest" });
+
+
+    const prompt = `
+You are a receipt parser. Extract the following from the receipt image:
+
+- total amount paid (number)
+- purchase date in ISO format YYYY-MM-DD
+- main category (one of: Food, Groceries, Rent, Travel, Shopping, Bills, Other)
+- a short text note/description.
+
+Return ONLY valid JSON in this exact shape:
+{
+  "amount": number,
+  "date": "YYYY-MM-DD",
+  "category": "string",
+  "note": "string"
+}
+No extra text, no markdown, no explanation. 
+`;
+
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          data: base64,
+          mimeType,
+        },
+      },
+      { text: prompt },
+    ]);
+
+    const responseText = result.response.text().trim();
+
+    // Some models wrap JSON in ```json ``` fences – strip if present
+    const cleaned = responseText
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (err) {
+      console.error("Failed to parse JSON from Gemini:", responseText);
+      return res.status(500).json({
+        success: false,
+        message: "Could not understand receipt. Please fill manually.",
+      });
+    }
+
+    // Normalize result
+    const data = {
+      amount:
+        typeof parsed.amount === "string"
+          ? parseFloat(parsed.amount)
+          : parsed.amount,
+      date: parsed.date || "",
+      category: parsed.category || "",
+      note: parsed.note || "",
+    };
+
+    return res.json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error("Error in parseReceipt:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while scanning receipt.",
+    });
+  } finally {
+    // (Optional) delete uploaded file to save space
+    if (req.file && req.file.path) {
+      fs.unlink(req.file.path, () => {});
+    }
+  }
+};
+
 
 // Add Expense Source
 exports.addExpense = async (req, res) => {
